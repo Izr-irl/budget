@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <link rel="manifest" href="manifest.json">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+    <title>Budget App</title>
+    <style>
+        :root {
+            --list-item-bg-opacity: 0;
+            /* Default to transparent */
+            --list-item-bg: #789690;
+            /* Greenish color */
+            --background-color: #b2d8d8;
+        }
+
+        html,
+        body {
+            font-family: Arial, sans-serif;
+            padding: 0;
+            margin: 0;
+            background-color: var(--background-color);
+        }
+
+        ul {
+            list-style-type: none;
+            padding: 0;
+        }
+
+        li {
+            background-color: rgba(120, 150, 144, var(--list-item-bg-opacity));
+            margin: 0;
+            cursor: pointer;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            padding: 10px;
+        }
+
+        .day-number {
+            font-weight: bold;
+        }
+
+        .entry-name {
+            flex: 1;
+        }
+
+        .entry-type,
+        .entry-amount {
+            font-weight: bold;
+        }
+
+        .item-total {
+            font-size: 0.9em;
+            color: #444;
+        }
+
+        dialog {
+            padding: 20px;
+            border: none;
+            border-radius: 5px;
+        }
+
+        label,
+        input,
+        select,
+        button {
+            display: block;
+            margin: 5px 0;
+        }
+
+        #total {
+            font-weight: bold;
+            position: fixed;
+            bottom: 0;
+            background: #fff;
+            width: 100%;
+            height: 3rem;
+            margin: 0;
+            display: grid;
+            align-content: space-around;
+            padding: 0 0.5rem;
+        }
+
+        .entry-field-group {
+            border: 1px solid #ddd;
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 4px;
+            background-color: #f9f9f9;
+        }
+
+        button {
+            background-color: #789690;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #5b7570;
+        }
+
+        #number-list {
+            display: grid;
+            gap: 0;
+            margin: 0 0 3.15rem 0;
+        }
+
+        h1 {
+            display: none;
+        }
+
+        #settingsButton {
+            display: none;
+        }
+
+        .resetButton {
+            margin-top: 20px;
+            background-color: rgb(204, 51, 51);
+            z-index: 1000;
+            position: fixed;
+            bottom: 3px;
+            right: 11px;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Budget App</h1>
+    <button id="settingsButton">Settings</button>
+    <ul id="number-list"></ul>
+    <p id="total">Total: 0</p>
+
+    <dialog id="settingsDialog">
+        <form method="dialog">
+            <label>Pay Day
+                <input type="number" id="payDay" min="1" max="31">
+            </label>
+            <button id="saveSettings">Save</button>
+            <button type="button" id="closeSettings">Close</button>
+        </form>
+    </dialog>
+
+    <dialog id="entryDialog">
+        <form method="dialog">
+            <div id="fieldsContainer">
+                <div class="entry-field-group">
+                    <label>Name <input type="text" class="entryName"></label>
+                    <label>Plus or Minus
+                        <select class="entryType">
+                            <option value="-">Minus</option>
+                            <option value="+">Plus</option>
+                        </select>
+                    </label>
+                    <label>Amount <input type="number" class="entryAmount" min="1"
+                            oninput="this.value = Math.abs(this.value)"></label>
+                </div>
+            </div>
+            <button id="addFieldButton" type="button">Add Field</button>
+            <button id="okButton">OK</button>
+            <button type="button" id="closeButton">Close</button>
+        </form>
+    </dialog>
+
+    <dialog id="initialPayDayDialog">
+        <form method="dialog">
+            <h2>Initial Setup</h2>
+            <label>Specify a "Pay Day":
+                <input type="number" id="initialPayDay" min="1" max="31" required>
+            </label>
+            <label>Name:
+                <input type="text" id="initialPayDayName" required>
+            </label>
+            <label>Enter a value:
+                <input type="number" id="initialPayDayValue" min="1" required>
+            </label>
+            <button id="setInitialPayDay">OK</button>
+        </form>
+    </dialog>
+
+    <script>
+        // DOM Elements
+        const list = document.getElementById("number-list");
+        const dialog = document.getElementById("entryDialog");
+        const settingsDialog = document.getElementById("settingsDialog");
+        const totalDisplay = document.getElementById("total");
+        const closeButton = document.getElementById("closeButton");
+        const settingsButton = document.getElementById("settingsButton");
+        const saveSettings = document.getElementById("saveSettings");
+        const closeSettings = document.getElementById("closeSettings");
+        const payDayInput = document.getElementById("payDay");
+        const addFieldButton = document.getElementById("addFieldButton");
+        const fieldsContainer = document.getElementById("fieldsContainer");
+
+        // Initial Pay Day Dialog Elements
+        const initialPayDayDialog = document.getElementById("initialPayDayDialog");
+        const initialPayDayInput = document.getElementById("initialPayDay");
+        const initialPayDayValueInput = document.getElementById("initialPayDayValue");
+        const initialPayDayNameInput = document.getElementById("initialPayDayName");
+        const setInitialPayDayButton = document.getElementById("setInitialPayDay");
+
+        // Variables
+        let currentItem;
+        let payDay = 1;
+
+        // App data structure
+        let budgetData = {
+            payDay: 1,
+            entries: {} // Will store entries by day number
+        };
+
+        // Load data from localStorage
+        function loadFromLocalStorage() {
+            const savedData = localStorage.getItem('budgetAppData');
+            if (savedData) {
+                try {
+                    budgetData = JSON.parse(savedData);
+                    payDay = budgetData.payDay;
+                    return true;
+                } catch (e) {
+                    console.error('Error loading data from localStorage:', e);
+                    return false;
+                }
+            }
+            return false;
+        }
+
+        // Save data to localStorage
+        function saveToLocalStorage() {
+            try {
+                localStorage.setItem('budgetAppData', JSON.stringify(budgetData));
+            } catch (e) {
+                console.error('Error saving to localStorage:', e);
+                alert('Failed to save data. Local storage might be full or disabled.');
+            }
+        }
+
+        // Collect data from the list and save it
+        function saveListData() {
+            const entries = {};
+            document.querySelectorAll("#number-list li").forEach(li => {
+                const day = parseInt(li.dataset.number);
+                const name = li.querySelector(".entry-name").textContent;
+                const type = li.querySelector(".entry-type").textContent;
+                const amount = li.querySelector(".entry-amount").textContent;
+
+                if (name && amount) {
+                    entries[day] = {
+                        name,
+                        type,
+                        amount: parseInt(amount)
+                    };
+                }
+            });
+
+            budgetData.entries = entries;
+            budgetData.payDay = payDay;
+            saveToLocalStorage();
+        }
+
+        // Generate the list of days
+        function generateList() {
+            list.innerHTML = "";
+            for (let i = 0; i < 31; i++) {
+                let day = ((payDay - 1 + i) % 31) + 1;
+                let li = document.createElement("li");
+                li.dataset.number = day;
+                li.innerHTML = `<span class="day-number">${day}</span> <span class="entry-name"></span> <span class="entry-type"></span> <span class="entry-amount"></span>`;
+                li.addEventListener("click", () => {
+                    currentItem = li;
+
+                    // Clear previous fields
+                    fieldsContainer.innerHTML = "";
+                    addEntryField();
+
+                    dialog.showModal();
+                });
+                list.appendChild(li);
+            }
+
+            // Apply saved entries to the list
+            if (budgetData.entries) {
+                document.querySelectorAll("#number-list li").forEach(li => {
+                    const day = parseInt(li.dataset.number);
+                    const entry = budgetData.entries[day];
+
+                    if (entry) {
+                        li.querySelector(".entry-name").textContent = entry.name;
+                        li.querySelector(".entry-type").textContent = entry.type;
+                        li.querySelector(".entry-amount").textContent = entry.amount;
+                    }
+                });
+            }
+
+            updateTotal();
+        }
+
+        // Add a new entry field to the dialog
+        function addEntryField() {
+            const fieldGroup = document.createElement("div");
+            fieldGroup.className = "entry-field-group";
+            fieldGroup.innerHTML = `
+                <label>Name <input type="text" class="entryName"></label>
+                <label>Plus or Minus
+                    <select class="entryType">
+                        <option value="-">Minus</option>
+                        <option value="+">Plus</option>                      
+                    </select>
+                </label>
+                <label>Amount <input type="number" class="entryAmount" min="1" oninput="this.value = Math.abs(this.value)"></label>
+            `;
+            fieldsContainer.appendChild(fieldGroup);
+        }
+
+        // Update the total and the visual representation
+        function updateTotal() {
+            let total = 0;
+            let runningTotal = 0;
+            let payDayAmount = 0;
+            let lastOpacity = 0;
+
+            const listItems = document.querySelectorAll("#number-list li");
+
+            // First pass - capture pay day amount and calculate totals
+            listItems.forEach(li => {
+                const amountEl = li.querySelector(".entry-amount");
+                const typeEl = li.querySelector(".entry-type");
+                const value = parseInt(amountEl.textContent.trim());
+
+                if (!isNaN(value)) {
+                    const adjustment = typeEl.textContent.trim() === "-" ? -value : value;
+                    total += adjustment;
+                    runningTotal += adjustment;
+
+                    // Capture Pay Day amount for opacity reference
+                    if (parseInt(li.dataset.number) === payDay) {
+                        payDayAmount = Math.abs(adjustment);
+                    }
+                }
+
+                // Add a total span if not present
+                let totalEl = li.querySelector(".item-total");
+                if (!totalEl) {
+                    totalEl = document.createElement("span");
+                    totalEl.className = "item-total";
+                    li.appendChild(totalEl);
+                }
+
+                // Update the item total text
+                totalEl.textContent = ` (Total: ${runningTotal})`;
+            });
+
+            // Second pass - set opacity values with value propagation
+            listItems.forEach(li => {
+                const amountEl = li.querySelector(".entry-amount");
+                const value = parseInt(amountEl.textContent.trim());
+                const dayNumber = parseInt(li.dataset.number);
+
+                // Set opacity based on specific cases
+                if (dayNumber === payDay) {
+                    // Pay day is always fully visible
+                    li.style.setProperty('--list-item-bg-opacity', '1');
+                    lastOpacity = 1;
+                } else if (!isNaN(value)) {
+                    // If it has a value, calculate opacity based on running total
+                    if (payDayAmount > 0) {
+                        // Get current running total at this point
+                        const runningAmount = parseInt(li.querySelector(".item-total").textContent.match(/-?\d+/)[0]);
+                        const relativeValue = Math.abs(runningAmount);
+                        const newOpacity = Math.min(1, 0.3 + (relativeValue / payDayAmount) * 0.7);
+                        li.style.setProperty('--list-item-bg-opacity', newOpacity.toString());
+                        lastOpacity = newOpacity;
+                    } else {
+                        // Default opacity if no pay day amount
+                        li.style.setProperty('--list-item-bg-opacity', '0.5');
+                        lastOpacity = 0.5;
+                    }
+                } else {
+                    // For empty items, use the opacity of the last non-empty item
+                    li.style.setProperty('--list-item-bg-opacity', lastOpacity.toString());
+                }
+            });
+
+            totalDisplay.textContent = `Total: ${total}`;
+
+            // Save the updated data
+            saveListData();
+        }
+
+        // Event Listeners
+        settingsButton.addEventListener("click", () => {
+            payDayInput.value = payDay;
+            settingsDialog.showModal();
+        });
+
+        saveSettings.addEventListener("click", () => {
+            let newPayDay = parseInt(payDayInput.value);
+            if (!isNaN(newPayDay) && newPayDay >= 1 && newPayDay <= 31) {
+                payDay = newPayDay;
+                generateList();
+                updateTotal();
+            }
+            settingsDialog.close();
+        });
+
+        closeSettings.addEventListener("click", () => {
+            settingsDialog.close();
+        });
+
+        addFieldButton.addEventListener("click", () => {
+            addEntryField();
+        });
+
+        document.getElementById("okButton").addEventListener("click", (event) => {
+            event.preventDefault();
+
+            if (!currentItem) return;
+
+            const fieldGroups = document.querySelectorAll("#fieldsContainer .entry-field-group");
+            let combinedName = "";
+            let combinedAmount = 0;
+
+            fieldGroups.forEach(fieldGroup => {
+                const nameInput = fieldGroup.querySelector(".entryName");
+                const typeSelect = fieldGroup.querySelector(".entryType");
+                const amountInput = fieldGroup.querySelector(".entryAmount");
+
+                if (!nameInput || !typeSelect || !amountInput) return;
+
+                const name = nameInput.value.trim();
+                const type = typeSelect.value;
+                const amount = parseInt(amountInput.value);
+
+                if (name && !isNaN(amount) && amount > 0) {
+                    combinedName += (combinedName ? ", " : "") + name;
+                    combinedAmount += type === "-" ? -amount : amount;
+                }
+            });
+
+            if (combinedName) {
+                currentItem.querySelector(".entry-name").textContent = combinedName;
+                currentItem.querySelector(".entry-type").textContent = combinedAmount >= 0 ? "+" : "-";
+                currentItem.querySelector(".entry-amount").textContent = Math.abs(combinedAmount);
+                dialog.close();
+                updateTotal();
+            } else {
+                alert("Please enter at least one valid entry with name and amount.");
+            }
+        });
+
+        closeButton.addEventListener("click", () => {
+            dialog.close();
+        });
+
+        dialog.addEventListener("click", (event) => {
+            if (event.target === dialog) {
+                dialog.close();
+            }
+        });
+
+        // Initial PayDay setup
+        setInitialPayDayButton.addEventListener("click", (event) => {
+            event.preventDefault();
+            let newPayDay = parseInt(initialPayDayInput.value);
+            let newValue = parseInt(initialPayDayValueInput.value);
+            let newName = initialPayDayNameInput.value.trim();
+
+            if (!isNaN(newPayDay) && newPayDay >= 1 && newPayDay <= 31 && !isNaN(newValue) && newValue > 0 && newName) {
+                payDay = newPayDay;
+                generateList();
+
+                // Give the DOM time to update after generateList()
+                setTimeout(() => {
+                    let payDayLi = document.querySelector(`#number-list li[data-number='${payDay}']`);
+                    if (payDayLi) {
+                        payDayLi.querySelector(".entry-name").textContent = newName;
+                        payDayLi.querySelector(".entry-type").textContent = "+";
+                        payDayLi.querySelector(".entry-amount").textContent = newValue;
+                    }
+                    updateTotal();
+                    initialPayDayDialog.close();
+                }, 0);
+            } else {
+                alert("Please enter a valid Pay Day (1-31), a name, and a positive value.");
+            }
+        });
+
+        // Initialize the app
+        window.onload = () => {
+            // Try to load data first
+            if (loadFromLocalStorage()) {
+                // If we have data, just generate the list with saved data
+                generateList();
+            } else {
+                // If no data, show initial setup dialog
+                initialPayDayDialog.showModal();
+            }
+        };
+
+        // Add a button to clear storage (optional)
+        const resetButton = document.createElement('button');
+        resetButton.textContent = 'Reset App Data';
+        resetButton.className = 'resetButton';
+        resetButton.style.marginTop = '20px';
+        resetButton.style.backgroundColor = '#cc3333';
+        resetButton.addEventListener('click', () => {
+            if (confirm('Are you sure you want to clear all budget data? This cannot be undone.')) {
+                localStorage.removeItem('budgetAppData');
+                location.reload();
+            }
+        });
+        document.body.appendChild(resetButton);
+    </script>
+    <script>
+        if ("serviceWorker" in navigator) {
+            navigator.serviceWorker.register("/sw.js")
+                .then(() => console.log("Service Worker registered successfully"))
+                .catch((err) => console.error("Service Worker registration failed:", err));
+        }
+    </script>
+</body>
+
+
+
+</html>
