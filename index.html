@@ -3,22 +3,36 @@
 
 <head>
     <link rel="manifest" href="manifest.json">
+    <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 
     <title>Budget App</title>
     <style>
         :root {
-            --list-item-bg-opacity: 0;
+            --gradient-bg: linear-gradient(180deg, #ffffffa8, #00000070);
+            --list-item-greyscale: 0;
             /* Default to transparent */
-            --list-item-bg: #789690;
-            /* Greenish color */
-            --background-color: #b2d8d8;
+            --list-item-bg: #4f8df7d2;
+            /* Original greenish color */
+            --background-color: #F4F8FB;
+            --text-secondary: #ffffffc4;
+            --background-white: #fff;
+            --border-light: #ddd;
+            --background-light: #f9f9f9;
+            --button-bg: #3A6CC3;
+            --button-hover-bg: #2C5282;
+            --danger-bg: #E74C3C;
+            --today-outline: #ffffff;
+            --item-total-bg: #ffffffd0;
+            --item-total-color: #444;
         }
 
         html,
         body {
-            font-family: Arial, sans-serif;
+            font-family: 'Quicksand', Arial, sans-serif;
             padding: 0;
             margin: 0;
             background-color: var(--background-color);
@@ -27,20 +41,48 @@
         ul {
             list-style-type: none;
             padding: 0;
+            background: var(--gradient-bg);
         }
 
         li {
-            background-color: rgba(120, 150, 144, var(--list-item-bg-opacity));
+            background-color: var(--list-item-bg);
+            filter: grayscale(var(--list-item-greyscale, 0));
             margin: 0;
             cursor: pointer;
             display: flex;
-            gap: 10px;
+            gap: 30px;
             align-items: center;
-            padding: 10px;
+            min-height: 44px;
+            padding: 10px 16px;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+        }
+
+        li:not(:last-child) {
+            border-bottom: 1px solid rgba(0, 0, 0, 0.04);
+        }
+
+        .entry-name {
+            padding: 0 6px;
+        }
+
+        .entry-type,
+        .entry-amount {
+            margin-left: 4px;
+        }
+
+        li.today {
+            outline: 1px solid var(--today-outline);
+            outline-offset: -1px;
+            border-left: 5px solid var(--today-outline);
+            /* No background fill, keep greyscale */
         }
 
         .day-number {
             font-weight: bold;
+            font-family: 'Roboto Mono', 'Menlo', 'Consolas', monospace;
+            display: inline-block;
+            width: 2.5ch;
+            text-align: right;
         }
 
         .entry-name {
@@ -53,47 +95,78 @@
         }
 
         .item-total {
-            font-size: 0.9em;
-            color: #444;
+            display: inline-block;
+            background: rgba(255, 255, 255, 0.85);
+            color: var(--item-total-color);
+            font-size: 0.95em;
+            font-weight: 600;
+            border-radius: 999px;
+            padding: 2px 12px;
+            margin-left: 8px;
+            min-width: 48px;
+            text-align: center;
+            letter-spacing: 0.02em;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+            border: 1px solid #e0e7ef;
         }
 
         dialog {
-            padding: 20px;
+            padding: 32px 20px;
             border: none;
-            border-radius: 5px;
+            border-radius: 10px;
+            max-width: 95vw;
+            width: 400px;
         }
 
-        label,
-        input,
-        select,
-        button {
+        dialog label,
+        dialog input,
+        dialog select,
+        dialog button {
             display: block;
+            min-height: 44px;
+            font-size: 1.1em;
             margin: 5px 0;
+        }
+
+        dialog input,
+        dialog select {
+            width: 100%;
+            box-sizing: border-box;
+            padding: 8px 12px;
+            margin-bottom: 12px;
+        }
+
+        dialog button {
+            min-width: 44px;
+            padding: 10px 18px;
+            margin-top: 10px;
         }
 
         #total {
             font-weight: bold;
             position: fixed;
             bottom: 0;
-            background: #fff;
+            background: var(--background-white);
             width: 100%;
-            height: 3rem;
+            height: 4.5rem;
             margin: 0;
-            display: grid;
-            align-content: space-around;
-            padding: 0 0.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 1rem env(safe-area-inset-bottom, 16px) 1rem;
+            font-size: 1.2em;
         }
 
         .entry-field-group {
-            border: 1px solid #ddd;
+            border: 1px solid var(--border-light);
             padding: 10px;
             margin-bottom: 10px;
             border-radius: 4px;
-            background-color: #f9f9f9;
+            background-color: var(--background-light);
         }
 
         button {
-            background-color: #789690;
+            background-color: var(--button-bg);
             color: white;
             border: none;
             padding: 8px 16px;
@@ -102,7 +175,7 @@
         }
 
         button:hover {
-            background-color: #5b7570;
+            background-color: var(--button-hover-bg);
         }
 
         #number-list {
@@ -120,12 +193,59 @@
         }
 
         .resetButton {
-            margin-top: 20px;
-            background-color: rgb(204, 51, 51);
+            background-color: var(--danger-bg);
             z-index: 1000;
             position: fixed;
-            bottom: 3px;
             right: 11px;
+        }
+
+        /* Visually hide text but keep for screen readers */
+        .visually-hidden {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border: 0;
+        }
+
+        .dialog-actions {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+            margin-top: 18px;
+        }
+
+        .dialog-actions button {
+            width: 68px;
+            height: 68px;
+            min-width: 44px;
+            min-height: 44px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.7em;
+            padding: 0;
+        }
+
+        .dialog-actions button i {
+            margin: 0;
+        }
+
+        .dialog-actions button.disabled {
+            background-color: #e0e0e0 !important;
+            color: #aaa !important;
+            border: none;
+            pointer-events: none;
+            opacity: 0.6;
+        }
+
+        .dialog-actions button.disabled i {
+            color: #aaa !important;
         }
     </style>
 </head>
@@ -134,14 +254,14 @@
     <h1>Budget App</h1>
     <button id="settingsButton">Settings</button>
     <ul id="number-list"></ul>
-    <p id="total">Total: 0</p>
+    <div id="total"><span id="totalText">Total: 0</span><button class="resetButton">Reset App Data</button></div>
 
     <dialog id="settingsDialog">
         <form method="dialog">
             <label>Pay Day
                 <input type="number" id="payDay" min="1" max="31">
             </label>
-            <button id="saveSettings">Save</button>
+            <button id="saveSettings"><i class="ri-save-3-line"></i> Save</button>
             <button type="button" id="closeSettings">Close</button>
         </form>
     </dialog>
@@ -161,9 +281,14 @@
                             oninput="this.value = Math.abs(this.value)"></label>
                 </div>
             </div>
-            <button id="addFieldButton" type="button">Add Field</button>
-            <button id="okButton">OK</button>
-            <button type="button" id="closeButton">Close</button>
+            <div class="dialog-actions">
+                <button id="addFieldButton" type="button"><i class="ri-add-box-line"></i><span
+                        class="visually-hidden">Add Field</span></button>
+
+                <button type="button" id="closeButton"><i class="ri-close-line"></i><span
+                        class="visually-hidden">Close</span></button>
+                <button id="okButton"><i class="ri-check-line"></i><span class="visually-hidden">OK</span></button>
+            </div>
         </form>
     </dialog>
 
@@ -266,33 +391,61 @@
         // Generate the list of days
         function generateList() {
             list.innerHTML = "";
+            const today = new Date().getDate();
+            function getDaySuffix(day) {
+                if (day >= 11 && day <= 13) return 'th';
+                switch (day % 10) {
+                    case 1: return 'st';
+                    case 2: return 'nd';
+                    case 3: return 'rd';
+                    default: return 'th';
+                }
+            }
             for (let i = 0; i < 31; i++) {
                 let day = ((payDay - 1 + i) % 31) + 1;
                 let li = document.createElement("li");
                 li.dataset.number = day;
-                li.innerHTML = `<span class="day-number">${day}</span> <span class="entry-name"></span> <span class="entry-type"></span> <span class="entry-amount"></span>`;
+                li.innerHTML = `<span class="day-number">${day}<sup>${getDaySuffix(day)}</sup></span> <span class="entry-name"></span> <span class="entry-type"></span> <span class="entry-amount"></span>`;
+                if (day === today) {
+                    li.classList.add('today');
+                }
                 li.addEventListener("click", () => {
                     currentItem = li;
-
-                    // Clear previous fields
                     fieldsContainer.innerHTML = "";
+                    const entry = budgetData.entries[day];
                     addEntryField();
-
+                    if (entry) {
+                        // Pre-fill values for editing
+                        const nameInput = fieldsContainer.querySelector('.entryName');
+                        const typeSelect = fieldsContainer.querySelector('.entryType');
+                        const amountInput = fieldsContainer.querySelector('.entryAmount');
+                        if (nameInput) nameInput.value = entry.name;
+                        if (typeSelect) typeSelect.value = entry.type;
+                        if (amountInput) amountInput.value = entry.amount;
+                        // Show Delete button
+                        if (!fieldsContainer.parentElement.querySelector('.dialog-actions').contains(deleteEntryButton)) {
+                            let actions = fieldsContainer.parentElement.querySelector('.dialog-actions');
+                            if (actions) actions.prepend(deleteEntryButton);
+                        }
+                        deleteEntryButton.classList.remove('disabled');
+                    } else {
+                        // Grey out Delete button
+                        deleteEntryButton.classList.add('disabled');
+                    }
                     dialog.showModal();
                 });
                 list.appendChild(li);
             }
 
-            // Apply saved entries to the list
+            // Apply saved entries to the list (no Edit button)
             if (budgetData.entries) {
                 document.querySelectorAll("#number-list li").forEach(li => {
                     const day = parseInt(li.dataset.number);
                     const entry = budgetData.entries[day];
-
                     if (entry) {
                         li.querySelector(".entry-name").textContent = entry.name;
-                        li.querySelector(".entry-type").textContent = entry.type;
-                        li.querySelector(".entry-amount").textContent = entry.amount;
+                        li.querySelector(".entry-type").textContent = '';
+                        li.querySelector(".entry-amount").textContent = entry.type + entry.amount;
                     }
                 });
             }
@@ -322,8 +475,6 @@
             let total = 0;
             let runningTotal = 0;
             let payDayAmount = 0;
-            let lastOpacity = 0;
-
             const listItems = document.querySelectorAll("#number-list li");
 
             // First pass - capture pay day amount and calculate totals
@@ -337,7 +488,7 @@
                     total += adjustment;
                     runningTotal += adjustment;
 
-                    // Capture Pay Day amount for opacity reference
+                    // Capture Pay Day amount for greyscale reference
                     if (parseInt(li.dataset.number) === payDay) {
                         payDayAmount = Math.abs(adjustment);
                     }
@@ -352,41 +503,43 @@
                 }
 
                 // Update the item total text
-                totalEl.textContent = ` (Total: ${runningTotal})`;
+                totalEl.textContent = Math.abs(runningTotal);
             });
 
-            // Second pass - set opacity values with value propagation
+            // Second pass - set greyscale values with value propagation
+            let lastGreyscale = 0;
             listItems.forEach(li => {
                 const amountEl = li.querySelector(".entry-amount");
                 const value = parseInt(amountEl.textContent.trim());
                 const dayNumber = parseInt(li.dataset.number);
 
-                // Set opacity based on specific cases
+                // Set greyscale based on specific cases
                 if (dayNumber === payDay) {
-                    // Pay day is always fully visible
-                    li.style.setProperty('--list-item-bg-opacity', '1');
-                    lastOpacity = 1;
+                    // Pay day is always full color
+                    li.style.setProperty('--list-item-greyscale', '0');
+                    lastGreyscale = 0;
                 } else if (!isNaN(value)) {
-                    // If it has a value, calculate opacity based on running total
+                    // If it has a value, calculate greyscale based on running total
                     if (payDayAmount > 0) {
                         // Get current running total at this point
                         const runningAmount = parseInt(li.querySelector(".item-total").textContent.match(/-?\d+/)[0]);
                         const relativeValue = Math.abs(runningAmount);
-                        const newOpacity = Math.min(1, 0.3 + (relativeValue / payDayAmount) * 0.7);
-                        li.style.setProperty('--list-item-bg-opacity', newOpacity.toString());
-                        lastOpacity = newOpacity;
+                        // As the value dwindles, increase greyscale (0 = color, 1 = full greyscale)
+                        const greyscale = Math.min(1, 1 - (relativeValue / payDayAmount));
+                        li.style.setProperty('--list-item-greyscale', greyscale.toString());
+                        lastGreyscale = greyscale;
                     } else {
-                        // Default opacity if no pay day amount
-                        li.style.setProperty('--list-item-bg-opacity', '0.5');
-                        lastOpacity = 0.5;
+                        // Default greyscale if no pay day amount
+                        li.style.setProperty('--list-item-greyscale', '0.5');
+                        lastGreyscale = 0.5;
                     }
                 } else {
-                    // For empty items, use the opacity of the last non-empty item
-                    li.style.setProperty('--list-item-bg-opacity', lastOpacity.toString());
+                    // For empty items, use the greyscale of the last non-empty item
+                    li.style.setProperty('--list-item-greyscale', lastGreyscale.toString());
                 }
             });
 
-            totalDisplay.textContent = `Total: ${total}`;
+            document.getElementById('totalText').textContent = `Total: ${total}`;
 
             // Save the updated data
             saveListData();
@@ -444,8 +597,8 @@
 
             if (combinedName) {
                 currentItem.querySelector(".entry-name").textContent = combinedName;
-                currentItem.querySelector(".entry-type").textContent = combinedAmount >= 0 ? "+" : "-";
-                currentItem.querySelector(".entry-amount").textContent = Math.abs(combinedAmount);
+                currentItem.querySelector(".entry-type").textContent = '';
+                currentItem.querySelector(".entry-amount").textContent = (combinedAmount >= 0 ? '+' : '-') + Math.abs(combinedAmount);
                 dialog.close();
                 updateTotal();
             } else {
@@ -490,6 +643,15 @@
             }
         });
 
+        // Add a Delete button to the entry dialog
+        let deleteEntryButton = document.createElement('button');
+        deleteEntryButton.id = 'deleteEntryButton';
+        deleteEntryButton.innerHTML = '<i class="ri-delete-bin-5-line"></i><span class="visually-hidden">Delete</span>';
+        deleteEntryButton.type = 'button';
+        deleteEntryButton.style.backgroundColor = getComputedStyle(document.documentElement).getPropertyValue('--danger-bg').trim() || '#cc3333';
+        deleteEntryButton.style.marginLeft = '0';
+        // Only append to dialog when editing an existing entry
+
         // Initialize the app
         window.onload = () => {
             // Try to load data first
@@ -502,19 +664,27 @@
             }
         };
 
-        // Add a button to clear storage (optional)
-        const resetButton = document.createElement('button');
-        resetButton.textContent = 'Reset App Data';
-        resetButton.className = 'resetButton';
-        resetButton.style.marginTop = '20px';
-        resetButton.style.backgroundColor = '#cc3333';
+        // Add event listener for deleteEntryButton (only add once)
+        if (!deleteEntryButton._listenerAdded) {
+            deleteEntryButton.addEventListener('click', () => {
+                if (!currentItem) return;
+                const day = parseInt(currentItem.dataset.number);
+                delete budgetData.entries[day];
+                saveToLocalStorage();
+                generateList();
+                dialog.close();
+            });
+            deleteEntryButton._listenerAdded = true;
+        }
+
+        // Add event listener for reset button inside #total
+        const resetButton = document.querySelector('.resetButton');
         resetButton.addEventListener('click', () => {
             if (confirm('Are you sure you want to clear all budget data? This cannot be undone.')) {
                 localStorage.removeItem('budgetAppData');
                 location.reload();
             }
         });
-        document.body.appendChild(resetButton);
     </script>
     <script>
         if ("serviceWorker" in navigator) {
